@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: 'DM Sans', sans-serif;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: #f8fafc;
+      background: linear-gradient(135deg, #26343d, #22234d);
+    }
+
+    .main {
+      max-width: 1520px;
+      margin: 0 auto;
+      padding: 36px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 18px;
+      margin-bottom: 28px;
+    }
+
+    .topbar h1 {
+      margin: 0;
+      font-size: 38px;
+    }
+
+    .topbar p {
+      margin: 6px 0 0;
+      color: #cbd5e1;
+    }
+
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .badge {
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(90, 214, 125, 0.15);
+      color: #86efac;
+      font-weight: 700;
+      border: 1px solid rgba(90, 214, 125, 0.25);
+      white-space: nowrap;
+    }
+
+    .logout-btn {
+      color: #fff;
+      text-decoration: none;
+      padding: 11px 16px;
+      border-radius: 999px;
+      background: #ef4444;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(170px, 1fr));
+      gap: 18px;
+      margin-bottom: 28px;
+    }
+
+    .stat-card {
+      background: rgba(15, 23, 42, 0.76);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 18px 45px rgba(0, 0, 0, 0.18);
+    }
+
+    .stat-card span {
+      color: #94a3b8;
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .stat-card strong {
+      display: block;
+      margin-top: 10px;
+      font-size: 36px;
+    }
+
+    .panel {
+      background: rgba(15, 23, 42, 0.72);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      padding: 22px 24px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .panel-header h2 {
+      margin: 0;
+      font-size: 24px;
+    }
+
+    .search {
+      width: 300px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(2, 6, 23, 0.55);
+      color: white;
+      outline: none;
+      font-size: 15px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th {
+      text-align: left;
+      color: #94a3b8;
+      font-size: 13px;
+      padding: 15px 24px;
+      background: rgba(2, 6, 23, 0.25);
+    }
+
+    td {
+      padding: 18px 24px;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      color: #e2e8f0;
+    }
+
+    tr:hover td {
+      background: rgba(255, 255, 255, 0.035);
+    }
+
+    .user-pill {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+    }
+
+    .avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, #4facfe, #5ad67d);
+      color: #07111f;
+      font-weight: 800;
+    }
+
+    .action-link,
+    .delete-btn {
+      border: 0;
+      border-radius: 9px;
+      padding: 10px 13px;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      font-size: 14px;
+    }
+
+    .action-link {
+      color: #07111f;
+      background: #5ad67d;
+    }
+
+    .delete-btn {
+      color: #fff;
+      background: #ef4444;
+    }
+
+    .empty-row {
+      text-align: center;
+      color: #94a3b8;
+      padding: 32px;
+    }
+
+    @media (max-width: 850px) {
+      .main {
+        padding: 22px;
+      }
+
+      .stats {
+        grid-template-columns: 1fr;
+      }
+
+      .topbar,
+      .panel-header {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .topbar-actions {
+        width: 100%;
+        justify-content: space-between;
+      }
+
+      .search {
+        width: 100%;
+      }
+
+      table {
+        min-width: 720px;
+      }
+
+      .panel {
+        overflow-x: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <h1>Admin Dashboard</h1>
+        <p>Manage users, conversations, and saved chatbot responses.</p>
+      </div>
+
+      <div class="topbar-actions">
+        <div class="badge">Admin Online</div>
+        <a class="logout-btn" href="/admin/logout">Logout</a>
+      </div>
+    </div>
+
+    <section class="stats">
+      <div class="stat-card">
+        <span>Total Users</span>
+        <strong>{{ total_users }}</strong>
+      </div>
+
+      <div class="stat-card">
+        <span>Total Conversations</span>
+        <strong>{{ total_conversations }}</strong>
+      </div>
+
+      <div class="stat-card">
+        <span>Total Chats</span>
+        <strong>{{ total_chats }}</strong>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>Registered Users</h2>
+        <input class="search" id="userSearch" type="text" placeholder="Search users...">
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>User</th>
+            <th>Email</th>
+            <th>Chats</th>
+            <th>Delete</th>
+          </tr>
+        </thead>
+
+        <tbody id="userTable">
+          {% for user in users %}
+          <tr>
+            <td>#{{ user.id }}</td>
+            <td>
+              <div class="user-pill">
+                <div class="avatar">{{ user.username[:1]|upper }}</div>
+                {{ user.username }}
+              </div>
+            </td>
+            <td>{{ user.email }}</td>
+            <td>
+              <a class="action-link" href="/admin/user/{{ user.id }}">View Chats</a>
+            </td>
+            <td>
+              <form method="POST" action="/admin/delete_user/{{ user.id }}" onsubmit="return confirm('Delete this user and all chats?')">
+                <button class="delete-btn" type="submit">Delete</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+
+          {% if not users %}
+          <tr>
+            <td class="empty-row" colspan="5">No registered users found.</td>
+          </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </section>
+  </main>
+
+  <script>
+    const searchInput = document.getElementById('userSearch');
+    const rows = document.querySelectorAll('#userTable tr');
+
+    searchInput.addEventListener('input', function () {
+      const value = this.value.toLowerCase();
+
+      rows.forEach(function (row) {
+        row.style.display = row.innerText.toLowerCase().includes(value) ? '' : 'none';
+      });
+    });
+  </script>
+</body>
+</html>

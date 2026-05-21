@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>User Chats</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: 'DM Sans', sans-serif;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: #f8fafc;
+      background: linear-gradient(135deg, #26343d, #22234d);
+    }
+
+    .page {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 34px 24px;
+    }
+
+    .back-link {
+      color: #86efac;
+      text-decoration: none;
+      font-weight: 700;
+    }
+
+    .profile {
+      margin: 22px 0 28px;
+      padding: 24px;
+      background: rgba(15, 23, 42, 0.76);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .avatar {
+      width: 66px;
+      height: 66px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, #4facfe, #5ad67d);
+      color: #07111f;
+      font-size: 28px;
+      font-weight: 800;
+    }
+
+    .profile h1 {
+      margin: 0;
+      font-size: 32px;
+    }
+
+    .profile p {
+      margin: 5px 0 0;
+      color: #cbd5e1;
+    }
+
+    .section-title {
+      margin: 0 0 18px;
+      font-size: 24px;
+    }
+
+    .conversation {
+      background: rgba(15, 23, 42, 0.76);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 22px;
+      margin-bottom: 18px;
+    }
+
+    .conversation-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: flex-start;
+      margin-bottom: 18px;
+    }
+
+    .conversation h3 {
+      margin: 0;
+      font-size: 22px;
+    }
+
+    .conversation time {
+      display: block;
+      margin-top: 6px;
+      color: #94a3b8;
+      font-size: 14px;
+    }
+
+    .delete-btn {
+      border: 0;
+      border-radius: 9px;
+      padding: 10px 13px;
+      font-weight: 700;
+      cursor: pointer;
+      color: white;
+      background: #ef4444;
+      white-space: nowrap;
+    }
+
+    .chat-pair {
+      display: grid;
+      gap: 12px;
+      padding-top: 14px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      margin-top: 14px;
+    }
+
+    .bubble {
+      max-width: 920px;
+      padding: 14px 16px;
+      border-radius: 14px;
+      line-height: 1.55;
+    }
+
+    .bubble strong {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 13px;
+      color: #cbd5e1;
+    }
+
+    .user-bubble {
+      margin-left: auto;
+      background: linear-gradient(135deg, #4facfe, #5ad67d);
+      color: #07111f;
+      font-weight: 600;
+    }
+
+    .bot-bubble {
+      background: rgba(2, 6, 23, 0.45);
+      color: #e2e8f0;
+    }
+
+    .empty {
+      background: rgba(15, 23, 42, 0.76);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 24px;
+      color: #cbd5e1;
+    }
+
+    @media (max-width: 700px) {
+      .profile {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .conversation-head {
+        flex-direction: column;
+      }
+
+      .bubble {
+        max-width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <a class="back-link" href="/admin/dashboard">Back to Dashboard</a>
+
+    <section class="profile">
+      <div class="avatar">{{ user.username[:1]|upper }}</div>
+      <div>
+        <h1>{{ user.username }}</h1>
+        <p>{{ user.email }}</p>
+      </div>
+    </section>
+
+    <h2 class="section-title">Conversation History</h2>
+
+    {% if not conversations %}
+      <div class="empty">No conversations found for this user.</div>
+    {% endif %}
+
+    {% for conv in conversations %}
+      <article class="conversation">
+        <div class="conversation-head">
+          <div>
+            <h3>{{ conv.title }}</h3>
+            <time>{{ conv.created_at.strftime('%b %d, %Y %H:%M') }}</time>
+          </div>
+
+          <form method="POST" action="/admin/delete_conversation/{{ conv.id }}" onsubmit="return confirm('Delete this conversation?')">
+            <button class="delete-btn" type="submit">Delete Conversation</button>
+          </form>
+        </div>
+
+        {% for chat in conv.chats %}
+          <div class="chat-pair">
+            <div class="bubble user-bubble">
+              <strong>User</strong>
+              {{ chat.query }}
+            </div>
+
+            <div class="bubble bot-bubble">
+              <strong>Bot</strong>
+              {{ chat.response }}
+            </div>
+          </div>
+        {% endfor %}
+      </article>
+    {% endfor %}
+  </main>
+</body>
+</html>

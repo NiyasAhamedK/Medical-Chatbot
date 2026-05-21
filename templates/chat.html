@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Medical Chatbot</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Playfair+Display:wght@600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css"/>
+  <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}"/>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<div class="sidebar" id="sidebar">
+
+  <div class="sidebar-top">
+    <div class="sidebar-brand">
+      <img src="https://cdn-icons-png.flaticon.com/512/387/387569.png" class="sidebar-bot-avatar" alt="bot"/>
+      <div class="sidebar-brand-text">
+        <span>MedBot</span>
+        <p>AI Health Assistant</p>
+      </div>
+    </div>
+    <button class="sidebar-close-btn" id="sidebarClose" title="Close sidebar">
+      <i class="fas fa-times"></i>
+    </button>
+  </div>
+
+  <div class="user-card">
+    <div class="user-avatar-wrap">
+      <img src="https://i.ibb.co/d5b84Xw/Untitled-design.png" class="user-card-avatar" alt="user"/>
+      <span class="user-online-dot"></span>
+    </div>
+    <div class="user-card-info">
+      <strong>{{ session_username }}</strong>
+      <span>{{ session_email }}</span>
+    </div>
+  </div>
+
+  <button class="new-chat-btn" id="newChatBtn">
+    <i class="fas fa-plus"></i> New Conversation
+  </button>
+
+  <div class="conv-section">
+    <p class="conv-label">Recent Chats</p>
+    <ul class="conv-list" id="convList">
+      {% for conv in conversations %}
+
+      <!-- FIX 1: added space between %}  and active so class string is correct -->
+      <li class="conv-item {% if conv.id == active_conv_id %} active {% endif %}"
+          data-id="{{ conv.id }}" onclick="loadConversation('{{ conv.id }}')">
+        <div class="conv-item-inner">
+          <i class="fas fa-comment-medical conv-icon"></i>
+          <div class="conv-meta">
+            <span class="conv-title">{{ conv.title }}</span>
+            <span class="conv-date">{{ conv.created_at.strftime('%b %d') }}</span>
+          </div>
+        </div>
+        <button class="conv-delete-btn" onclick="deleteConversation(event, '{{ conv.id }}')" title="Delete">
+          <i class="fas fa-trash-alt"></i>
+        </button>
+      </li>
+
+      {% endfor %}
+      {% if not conversations %}
+      <li class="conv-empty">No conversations yet</li>
+      {% endif %}
+    </ul>
+  </div>
+
+  <div class="sidebar-footer">
+    <a href="/logout" class="logout-btn">
+      <i class="fas fa-sign-out-alt"></i> Sign Out
+    </a>
+  </div>
+
+</div>
+
+<!-- Sidebar overlay (mobile) -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+<!-- MAIN CHAT AREA -->
+<div class="chat-area" id="chatArea">
+
+  <div class="chat-topbar">
+    <button class="topbar-menu-btn" id="sidebarToggle" title="Toggle sidebar">
+      <i class="fas fa-bars"></i>
+    </button>
+    <div class="topbar-bot-info">
+      <div class="topbar-avatar-wrap">
+        <img src="https://cdn-icons-png.flaticon.com/512/387/387569.png" class="topbar-avatar" alt="bot"/>
+        <span class="topbar-online-dot"></span>
+      </div>
+      <div>
+        <span class="topbar-name">Medical Chatbot</span>
+        <p class="topbar-status">Ask me anything!</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="messages-wrap" id="messageFormeight">
+    <div class="welcome-state" id="welcomeState">
+      <img src="https://cdn-icons-png.flaticon.com/512/387/387569.png" class="welcome-avatar" alt="bot"/>
+      <h2>How can I help you today?</h2>
+      <p>Ask me about symptoms, medications, treatments, or any medical question.</p>
+      <div class="welcome-chips">
+        <button class="chip" onclick="fillInput('What are symptoms of diabetes?')">Diabetes symptoms</button>
+        <button class="chip" onclick="fillInput('How to treat a fever?')">Treat a fever</button>
+        <button class="chip" onclick="fillInput('What is acne?')">What is acne?</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="typing-indicator" id="typingIndicator">
+    <img src="https://cdn-icons-png.flaticon.com/512/387/387569.png" class="typing-avatar" alt="bot"/>
+    <div class="typing-dots">
+      <span></span><span></span><span></span>
+    </div>
+  </div>
+
+  <div class="input-bar">
+    <form id="messageArea">
+      <div class="input-inner">
+        <input type="text" id="text" name="msg" placeholder="Type your message…" autocomplete="off" required/>
+        <button type="submit" id="send" title="Send">
+          <i class="fas fa-paper-plane"></i>
+        </button>
+      </div>
+    </form>
+    <p class="input-disclaimer">MedBot may be wrong. Always consult a healthcare professional.</p>
+  </div>
+
+</div>
+<!-- FIX 3: removed the extra stray </div> that was here, which was closing chat-area too early -->
+
+<!-- SCRIPTS -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+<script>
+  let activeConvId = Number("{{ active_conv_id }}");
+
+  function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('sidebarOverlay').classList.toggle('visible');
+  }
+
+  document.getElementById('sidebarToggle').addEventListener('click', toggleSidebar);
+  document.getElementById('sidebarClose').addEventListener('click', toggleSidebar);
+
+  function fillInput(text) {
+    document.getElementById('text').value = text;
+    document.getElementById('text').focus();
+  }
+
+  $('#messageArea').on('submit', function (event) {
+    event.preventDefault();
+
+    const rawText = $('#text').val().trim();
+    if (!rawText) return;
+
+    const date = new Date();
+    const str_time = date.getHours() + ':' + String(date.getMinutes()).padStart(2, '0');
+
+    $('#welcomeState').fadeOut(200);
+
+    const userHtml = `
+      <div class="msg-row sent">
+        <div class="msg-bubble sent">${escapeHtml(rawText)}<span class="msg-time">${str_time}</span></div>
+        <img src="https://i.ibb.co/d5b84Xw/Untitled-design.png" class="msg-avatar" alt="user"/>
+      </div>`;
+
+    $('#messageFormeight').append(userHtml);
+    $('#text').val('');
+    scrollToBottom();
+
+    $('#typingIndicator').fadeIn(200);
+
+    $.ajax({
+      data: {
+        msg: rawText,
+        conv_id: activeConvId
+      },
+      type: 'POST',
+      url: '/get'
+    }).done(function (data) {
+      $('#typingIndicator').fadeOut(150, function () {
+        activeConvId = Number(data.conv_id || activeConvId);
+
+        const answer = formatMessage(data.answer || 'No response received.');
+
+        const botHtml = `
+          <div class="msg-row received">
+            <img src="https://cdn-icons-png.flaticon.com/512/387/387569.png" class="msg-avatar" alt="bot"/>
+            <div class="msg-bubble received">${answer}<span class="msg-time">${str_time}</span></div>
+          </div>`;
+
+        $('#messageFormeight').append(botHtml);
+        scrollToBottom();
+        refreshConvList();
+      });
+    }).fail(function (xhr) {
+      $('#typingIndicator').fadeOut(150);
+
+      let errorText = 'Sorry, something went wrong. Please try again.';
+
+      if (xhr.responseJSON && xhr.responseJSON.answer) {
+        errorText = xhr.responseJSON.answer;
+      }
+
+      const botHtml = `
+        <div class="msg-row received">
+          <img src="https://cdn-icons-png.flaticon.com/512/387/387569.png" class="msg-avatar" alt="bot"/>
+          <div class="msg-bubble received">${escapeHtml(errorText)}<span class="msg-time">${str_time}</span></div>
+        </div>`;
+
+      $('#messageFormeight').append(botHtml);
+      scrollToBottom();
+    });
+  });
+
+  document.getElementById('newChatBtn').addEventListener('click', function () {
+    $.post('/new_conversation').done(function (data) {
+      activeConvId = Number(data.conv_id);
+
+      $('#messageFormeight').children(':not(#welcomeState)').remove();
+      $('#welcomeState').show();
+
+      refreshConvList();
+
+      document.getElementById('sidebar').classList.remove('open');
+      document.getElementById('sidebarOverlay').classList.remove('visible');
+    });
+  });
+
+  function loadConversation(convId) {
+    $.get('/load_conversation/' + convId).done(function (data) {
+      activeConvId = Number(convId);
+
+      $('#messageFormeight').children(':not(#welcomeState)').remove();
+
+      if (!data.messages || data.messages.length === 0) {
+        $('#welcomeState').show();
+      } else {
+        $('#welcomeState').hide();
+      }
+
+      data.messages.forEach(function (m) {
+        const t = m.time || '';
+
+        const userHtml = `
+          <div class="msg-row sent">
+            <div class="msg-bubble sent">${formatMessage(m.query)}<span class="msg-time">${t}</span></div>
+            <img src="https://i.ibb.co/d5b84Xw/Untitled-design.png" class="msg-avatar" alt="user"/>
+          </div>`;
+
+        const botHtml = `
+          <div class="msg-row received">
+            <img src="https://cdn-icons-png.flaticon.com/512/387/387569.png" class="msg-avatar" alt="bot"/>
+            <div class="msg-bubble received">${formatMessage(m.response)}<span class="msg-time">${t}</span></div>
+          </div>`;
+
+        $('#messageFormeight').append(userHtml).append(botHtml);
+      });
+
+      scrollToBottom();
+      refreshConvList(convId);
+
+      document.getElementById('sidebar').classList.remove('open');
+      document.getElementById('sidebarOverlay').classList.remove('visible');
+    });
+  }
+
+  function deleteConversation(event, convId) {
+    event.stopPropagation();
+
+    if (!confirm('Delete this conversation?')) return;
+
+    $.ajax({
+      url: '/delete_conversation/' + convId,
+      type: 'DELETE'
+    }).done(function () {
+      if (Number(convId) === Number(activeConvId)) {
+        $.post('/new_conversation').done(function (data) {
+          activeConvId = Number(data.conv_id);
+
+          $('#messageFormeight').children(':not(#welcomeState)').remove();
+          $('#welcomeState').show();
+
+          refreshConvList();
+        });
+      } else {
+        refreshConvList();
+      }
+    });
+  }
+
+  function refreshConvList(highlightId) {
+    $.get('/conversations').done(function (data) {
+      const list = $('#convList');
+      list.empty();
+
+      if (!data || data.length === 0) {
+        list.append('<li class="conv-empty">No conversations yet</li>');
+        return;
+      }
+
+      const selectedId = Number(highlightId || activeConvId);
+
+      data.forEach(function (conv) {
+        const active = Number(conv.id) === selectedId ? 'active' : '';
+
+        list.append(`
+          <li class="conv-item ${active}" data-id="${conv.id}" onclick="loadConversation(${conv.id})">
+            <div class="conv-item-inner">
+              <i class="fas fa-comment-medical conv-icon"></i>
+              <div class="conv-meta">
+                <span class="conv-title">${escapeHtml(conv.title)}</span>
+                <span class="conv-date">${escapeHtml(conv.date)}</span>
+              </div>
+            </div>
+            <button class="conv-delete-btn" onclick="deleteConversation(event, ${conv.id})" title="Delete">
+              <i class="fas fa-trash-alt"></i>
+            </button>
+          </li>`);
+      });
+    });
+  }
+
+  function scrollToBottom() {
+    const wrap = document.getElementById('messageFormeight');
+    wrap.scrollTop = wrap.scrollHeight;
+  }
+
+  function escapeHtml(text) {
+    return String(text || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  function formatMessage(text) {
+    return escapeHtml(text).replace(/\n/g, '<br>');
+  }
+</script>
+</body>
+</html>
